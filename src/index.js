@@ -11,6 +11,7 @@ const appState = {
 }
 
 //根据action的描述去操作数据的变化
+//其实这样写达不到性能优化的效果，因为即使修改了state.title.text，但是state还是原来那个state，这些引用指向的还是原来的对象，只是对象内的内容发生了改变。所以renderApp第一句if判断不起效果
 function stateChanger(appState, action) {
     switch (action.type) {
         case 'UPDATE_TITLE_TEXT':
@@ -44,30 +45,52 @@ function createStore(state, stateChanger) {
         getState,
         //约定只能通过dispatch修改共享状态
         dispatch,
-        //通过suscribe监听数据状态被修改了，并且进行后续的例如重新渲染页面的操作。
+        //通过subscribe监听数据状态被修改了，并且进行后续的例如重新渲染页面的操作。
         subscribe
     }
 }
 
-function renderApp(appState) {
-    renderTitle(appState.title)
-    renderContent(appState.content)
+function renderApp(newAppState, oldAppState = {}) {
+    // 数据没有变化就不渲染了
+    if (newAppState === oldAppState) {
+        return 
+    }
+    console.log('render app...')
+    renderTitle(newAppState.title, oldAppState.title)
+    renderContent(newAppState.content, oldAppState.content)
 }
 
-function renderTitle(title) {
+function renderTitle(newTitle, oldTitle = {}) {
+    if (newTitle === oldTitle) {
+        return
+    }
+    console.log('render title...')
     const titleDOM = document.getElementById('title')
-    titleDOM.innerHTML = title.text
-    titleDOM.style.color = title.color
+    titleDOM.innerHTML = newTitle.text
+    titleDOM.style.color = newTitle.color
 }
 
-function renderContent(content) {
+function renderContent(newContent, oldContent = {}) {
+    if (newContent === oldContent) {
+        return 
+    }
+    console.log('render content...')
     const contentDOM = document.getElementById('content')
-    contentDOM.innerHTML = content.text
-    contentDOM.style.color = content.color
+    contentDOM.innerHTML = newContent.text
+    contentDOM.style.color = newContent.color
 }
 
 const store = createStore(appState, stateChanger)
-store.subscribe(() => renderApp(store.getState()))
+//缓存旧的state
+let oldState = store.getState()
+store.subscribe(() => {
+    //数据可能变化，获取新的state
+    const newState = store.getState()
+    //把新旧的state传进去渲染
+    renderApp(newState, oldState)
+    //渲染完以后，新的newState变成了旧的oldState，等待下一次数据变化重新渲染
+    oldState = newState
+})
 
 //首次渲染页面
 renderApp(store.getState())
@@ -76,3 +99,4 @@ store.dispatch({ type: 'UPDATE_TITLE_TEXT', text: '《React.js 小书!!!》' })
 //修改标题颜色
 store.dispatch({ type: 'UPDATE_TITLE_COLOR', color: 'pink' }) 
 //...后面不管如何 store.dispatch，都不需要重新调用 renderApp
+
