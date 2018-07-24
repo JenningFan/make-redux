@@ -11,17 +11,30 @@ const appState = {
 }
 
 //根据action的描述去操作数据的变化
-//其实这样写达不到性能优化的效果，因为即使修改了state.title.text，但是state还是原来那个state，这些引用指向的还是原来的对象，只是对象内的内容发生了改变。所以renderApp第一句if判断不起效果
-function stateChanger(appState, action) {
+function stateChanger(state, action) {
     switch (action.type) {
         case 'UPDATE_TITLE_TEXT':
-          appState.title.text = action.text
-          break
+          //构建共享结构的新对象返回，禁止直接修改原来的对象，一旦你要修改某些东西，你就得把修改路径上的所有对象复制一遍
+          //即凡是需要对对象进行修改时都是禁止修改原对象，而是先拷贝一个新对象，在此新对象的基础上进行修改，其余对象在新旧对象中共享，指向的是同一片内存空间
+          //修改数据的时候就把修改路径都复制一遍，但是保持其他内容不变，最后的所有对象具有某些不变共享的结构
+          return {
+              ...state,
+              title: {
+                  ...state.title,
+                  text: action.text
+              }
+          }
         case 'UPDATE_TITLE_COLOR':
-          appState.title.color = action.color
-          break
+          return {
+              ...state,
+              title: {
+                  ...state.title,
+                  color: action.color
+              }
+          }
         default:
-          break
+          //没有改变返回原对象
+          return state
       }
 }
 
@@ -34,12 +47,13 @@ function createStore(state, stateChanger) {
     const subscribe = (listener) => listeners.push(listener)
     //被调用时除了会调用stateChanger进行数据的修改，还会遍历listeners数组里面的函数并一个个去调用。相当于我们可以通过subscribe传入数据变化的监听函数，每当dispatch的时候，监听函数就会被调用，这样我们就可以在每当数据变化时候进行重新渲染：
     const dispatch = (action) => {
-        stateChanger(state, action)
+        //覆盖原对象
+        state = stateChanger(state, action)
         listeners.forEach((listener) => {
             listener()
         })
     }
-    //生产state，dispatch，subscribe的集合
+    //生成state，dispatch，subscribe的集合
     return {
         //获取共享状态
         getState,
