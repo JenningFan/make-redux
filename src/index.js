@@ -64,6 +64,75 @@ function createStore(state, stateChanger) {
     }
 }
 
+/** 优化stateChange(改名为reducer)和createStore开始 */
+
+//将state和action合并在一个函数内,reducer函数只是用来初始化数据以及描述state如何被“更改”
+function reducer(state, action) {
+    //如果传入state为空，则为初始化内置的数据，一般只会在一开始执行一次
+    if (!state) {
+        return {
+            title: {
+                text: 'React.js 小书',
+                color: 'red',
+            },
+            content: {
+                text: 'React.js 小书内容',
+                color: 'blue'
+            }
+        }
+    //根据action去改变state
+    } else {
+        switch (action.type) {
+            case 'UPDATE_TITLE_TEXT':
+              return {
+                  ...state,
+                  title: {
+                      ...state.title,
+                      text: action.text
+                  }
+              }
+            case 'UPDATE_TITLE_COLOR':
+              return {
+                  ...state,
+                  title: {
+                      ...state.title,
+                      color: action.color
+                  }
+              }
+            default:
+              //没有改变返回原对象
+              return state
+        }
+    }
+}
+
+//内部的state不再通过参数传入，而是一个局部变量let state = null
+//createStore接受一个叫reducer的函数作为参数，这个函数规定是一个纯函数，它接受两个参数，一个是state，一个是action。
+//reducer 是不允许有副作用的。你不能在里面操作DOM，也不能发Ajax请求，更不能直接修改state，它要做的仅仅是初始化和计算新的state。
+function createStore(reducer) {
+    let state = null
+    const listeners = []
+
+    const getState = () => state
+    const subscribe = (listener) => listeners.push(listener)
+    const dispatch = (action) => {
+        //将组件的state更新
+        state = reducer(state, action)
+        //执行
+        listeners.forEach((listener) => {
+            listener()
+        })
+    }
+    //内部调用一次dispatch->reducer(state = null, {})，导致state被初始化完成，后续外部的dispatch就是修改数据的行为了。
+    dispatch({})
+    return {
+        getState,
+        dispatch,
+        subscribe
+    }
+}
+/** 优化stateChange(改名为reducer)和createStore结束 */
+
 function renderApp(newAppState, oldAppState = {}) {
     // 数据没有变化就不渲染了
     if (newAppState === oldAppState) {
