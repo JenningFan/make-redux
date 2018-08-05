@@ -118,7 +118,7 @@ function createStore(reducer) {
     const dispatch = (action) => {
         //将组件的state更新
         state = reducer(state, action)
-        //执行
+        //执行订阅函数（一般是视图渲染函数）
         listeners.forEach((listener) => {
             listener()
         })
