@@ -110,6 +110,8 @@ function reducer(state, action) {
 //createStore接受一个叫reducer的函数作为参数，这个函数规定是一个纯函数，它接受两个参数，一个是state，一个是action。
 //reducer 是不允许有副作用的。你不能在里面操作DOM，也不能发Ajax请求，更不能直接修改state，它要做的仅仅是初始化和计算新的state。
 function createStore(reducer) {
+    //将state设为createStore函数的临时变量，好处是使得store的state只能通过闭包getState来访问
+    //即state是一个私有变量，在函数外部只能通过store提供的特定接口（getState和dispatch）来操作它，保证state的安全性
     let state = null
     const listeners = []
 
